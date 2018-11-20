@@ -1,6 +1,6 @@
 #!/bin/bash
 ### BEGIN INIT INFO
-# Provides:          shadowsocks
+# Provides:          ShadowsocksR
 # Required-Start:    $network $local_fs $remote_fs
 # Required-Stop:     $network $local_fs $remote_fs
 # Default-Start:     2 3 4 5
@@ -11,8 +11,8 @@
 
 # Author: Teddysun <i@teddysun.com>
 
-name=shadowsocks
-BIN=/usr/local/bin/ssserver
+name=ShadowsocksR
+BIN=/usr/local/shadowsocks/shadowsocks/server.py
 conf=/etc/shadowsocks.json
 
 start(){

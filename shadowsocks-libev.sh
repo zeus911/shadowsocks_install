@@ -6,13 +6,13 @@ export PATH
 #   Description: Install Shadowsocks-libev server for CentOS 6 or 7
 #   Author: Teddysun <i@teddysun.com>
 #   Thanks: @m0d8ye <https://twitter.com/m0d8ye>
-#   Intro:  http://teddysun.com/357.html
+#   Intro:  https://teddysun.com/357.html
 #===============================================================================================
 
 clear
 echo "#############################################################"
 echo "# Install Shadowsocks-libev server for CentOS 6 or 7        #"
-echo "# Intro: http://teddysun.com/357.html                       #"
+echo "# Intro: https://teddysun.com/357.html                      #"
 echo "# Author: Teddysun <i@teddysun.com>                         #"
 echo "# Thanks: @m0d8ye <https://twitter.com/m0d8ye>              #"
 echo "#############################################################"
@@ -112,7 +112,7 @@ function pre_install(){
     echo "Getting Public IP address, Please wait a moment..."
     IP=$(curl -s -4 icanhazip.com)
     if [[ "$IP" = "" ]]; then
-        IP=`curl -s -4 ipinfo.io | grep "ip" | awk -F\" '{print $4}'`
+        IP=`curl -s -4 ipinfo.io/ip`
     fi
     echo -e "Your main public IP is\t\033[32m$IP\033[0m"
     echo ""
@@ -136,7 +136,7 @@ function download_files(){
         cd $cur_dir/shadowsocks-libev-master/
     else
         echo ""
-        echo "Unzip shadowsocks-libev failed! Please visit http://teddysun.com/357.html and contact."
+        echo "Unzip shadowsocks-libev failed! Please visit https://teddysun.com/357.html and contact."
         exit 1
     fi
     # Download start script
@@ -164,22 +164,43 @@ function config_shadowsocks(){
 EOF
 }
 
-# iptables set
-function iptables_set(){
-    echo "iptables start setting..."
-    /sbin/service iptables status 1>/dev/null 2>&1
-    if [ $? -eq 0 ]; then
-        /etc/init.d/iptables status | grep '${shadowsocksport}' | grep 'ACCEPT' >/dev/null 2>&1
-        if [ $? -ne 0 ]; then
-            /sbin/iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport ${shadowsocksport} -j ACCEPT
-            /etc/init.d/iptables save
-            /etc/init.d/iptables restart
+# firewall set
+function firewall_set(){
+    echo "firewall set start..."
+    if centosversion 6; then
+        /etc/init.d/iptables status > /dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            iptables -L -n | grep '${shadowsocksport}' | grep 'ACCEPT' > /dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport ${shadowsocksport} -j ACCEPT
+                iptables -I INPUT -m state --state NEW -m udp -p udp --dport ${shadowsocksport} -j ACCEPT
+                /etc/init.d/iptables save
+                /etc/init.d/iptables restart
+            else
+                echo "port ${shadowsocksport} has been set up."
+            fi
         else
-            echo "port ${shadowsocksport} has been set up."
+            echo "WARNING: iptables looks like shutdown or not installed, please manually set it if necessary."
         fi
-    else
-        echo "iptables looks like shutdown, please manually set it if necessary."
+    elif centosversion 7; then
+        systemctl status firewalld > /dev/null 2>&1
+        if [ $? -eq 0 ];then
+            firewall-cmd --permanent --zone=public --add-port=${shadowsocksport}/tcp
+            firewall-cmd --permanent --zone=public --add-port=${shadowsocksport}/udp
+            firewall-cmd --reload
+        else
+            echo "Firewalld looks like not running, try to start..."
+            systemctl start firewalld
+            if [ $? -eq 0 ];then
+                firewall-cmd --permanent --zone=public --add-port=${shadowsocksport}/tcp
+                firewall-cmd --permanent --zone=public --add-port=${shadowsocksport}/udp
+                firewall-cmd --reload
+            else
+                echo "WARNING: Try to start firewalld failed. please enable port ${shadowsocksport} manually if necessary."
+            fi
+        fi
     fi
+    echo "firewall set completed..."
 }
 
 # Install 
@@ -206,7 +227,7 @@ function install(){
             fi
         else
             echo ""
-            echo "Shadowsocks-libev install failed! Please visit http://teddysun.com/357.html and contact."
+            echo "Shadowsocks-libev install failed! Please visit https://teddysun.com/357.html and contact."
             exit 1
         fi
     fi
@@ -225,7 +246,7 @@ function install(){
     echo -e "Your Local Port: \033[41;37m 1080 \033[0m"
     echo -e "Your Encryption Method: \033[41;37m aes-256-cfb \033[0m"
     echo ""
-    echo "Welcome to visit:http://teddysun.com/357.html"
+    echo "Welcome to visit:https://teddysun.com/357.html"
     echo "Enjoy it!"
     echo ""
     exit 0
@@ -251,11 +272,17 @@ function uninstall_shadowsocks_libev(){
         rm -f /usr/local/bin/ss-local
         rm -f /usr/local/bin/ss-tunnel
         rm -f /usr/local/bin/ss-server
+        rm -f /usr/local/bin/ss-manager
         rm -f /usr/local/bin/ss-redir
         rm -f /usr/local/lib/libshadowsocks.a
         rm -f /usr/local/lib/libshadowsocks.la
         rm -f /usr/local/include/shadowsocks.h
-        rm -rf /usr/local/lib/pkgconfig
+        rm -f /usr/local/lib/pkgconfig/shadowsocks-libev.pc
+        rm -f /usr/local/share/man/man1/ss-local.1
+        rm -f /usr/local/share/man/man1/ss-tunnel.1
+        rm -f /usr/local/share/man/man1/ss-server.1
+        rm -f /usr/local/share/man/man1/ss-manager.1
+        rm -f /usr/local/share/man/man1/ss-redir.1
         rm -f /usr/local/share/man/man8/shadowsocks.8
         rm -f /etc/init.d/shadowsocks
         echo "Shadowsocks-libev uninstall success!"
@@ -271,15 +298,13 @@ function install_shadowsocks_libev(){
     pre_install
     download_files
     config_shadowsocks
-    if ! centosversion 7; then
-        iptables_set
-    fi
+    firewall_set
     install
 }
 
 # Initialization step
 action=$1
-[  -z $1 ] && action=install
+[ -z $1 ] && action=install
 case "$action" in
 install)
     install_shadowsocks_libev

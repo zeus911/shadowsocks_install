@@ -1,23 +1,23 @@
 #! /bin/bash
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
-#===============================================================================================
-#   System Required:  CentOS, Debian, Ubuntu
-#   Description: One click Install Shadowsocks-go server
-#   Author: Teddysun <i@teddysun.com>
-#   Thanks: @cyfdecyf <https://twitter.com/cyfdecyf>
-#   Intro:  http://teddysun.com/392.html
-#===============================================================================================
+#=================================================================#
+#   System Required:  CentOS, Debian, Ubuntu                      #
+#   Description: One click Install Shadowsocks-go server          #
+#   Author: Teddysun <i@teddysun.com>                             #
+#   Thanks: @cyfdecyf <https://twitter.com/cyfdecyf>              #
+#   Intro:  https://teddysun.com/392.html                         #
+#==================================================================
 
 clear
-echo ""
+echo
 echo "#############################################################"
 echo "# One click Install Shadowsocks-go server                   #"
-echo "# Intro: http://teddysun.com/392.html                       #"
+echo "# Intro: https://teddysun.com/392.html                      #"
 echo "# Author: Teddysun <i@teddysun.com>                         #"
 echo "# Thanks: @cyfdecyf <https://twitter.com/cyfdecyf>          #"
 echo "#############################################################"
-echo ""
+echo
 
 # Make sure only root can run our script
 function rootness(){
@@ -68,7 +68,7 @@ function is_64bit(){
         return 0
     else
         return 1
-    fi        
+    fi
 }
 
 # Disable selinux
@@ -85,11 +85,11 @@ function pre_install(){
     echo "Please input password for shadowsocks-go:"
     read -p "(Default password: teddysun.com):" shadowsockspwd
     [ -z "$shadowsockspwd" ] && shadowsockspwd="teddysun.com"
-    echo ""
+    echo
     echo "---------------------------"
     echo "password = $shadowsockspwd"
     echo "---------------------------"
-    echo ""
+    echo
     # Set shadowsocks-go config port
     while true
     do
@@ -99,11 +99,11 @@ function pre_install(){
     expr $shadowsocksport + 0 &>/dev/null
     if [ $? -eq 0 ]; then
         if [ $shadowsocksport -ge 1 ] && [ $shadowsocksport -le 65535 ]; then
-            echo ""
+            echo
             echo "---------------------------"
             echo "port = $shadowsocksport"
             echo "---------------------------"
-            echo ""
+            echo
             break
         else
             echo "Input error! Please input correct numbers."
@@ -121,7 +121,7 @@ function pre_install(){
         stty echo
         stty $SAVEDSTTY
     }
-    echo ""
+    echo
     echo "Press any key to start...or Press Ctrl+C to cancel"
     char=`get_char`
     #Install necessary dependencies
@@ -135,10 +135,10 @@ function pre_install(){
     echo "Getting Public IP address, Please wait a moment..."
     IP=$(curl -s -4 icanhazip.com)
     if [[ "$IP" = "" ]]; then
-        IP=$(curl -s -4 ipinfo.io | grep "ip" | awk -F\" '{print $4}')
+        IP=$(curl -s -4 ipinfo.io/ip)
     fi
     echo -e "Your main public IP is\t\033[32m$IP\033[0m"
-    echo ""
+    echo
     #Current folder
     cur_dir=`pwd`
 }
@@ -147,31 +147,31 @@ function pre_install(){
 function download_files(){
     cd $cur_dir
     if is_64bit; then
-        if ! wget -c http://lamp.teddysun.com/shadowsocks/shadowsocks-server-linux64-1.1.4.gz;then
-            echo "Failed to download shadowsocks-server-linux64-1.1.4.gz"
+        if ! wget -c http://lamp.teddysun.com/shadowsocks/shadowsocks-server-linux64-1.1.5.gz;then
+            echo "Failed to download shadowsocks-server-linux64-1.1.5.gz"
             exit 1
         fi
-        gzip -d shadowsocks-server-linux64-1.1.4.gz
+        gzip -d shadowsocks-server-linux64-1.1.5.gz
         if [ $? -eq 0 ];then
-            echo "Decompress shadowsocks-server-linux64-1.1.4.gz success."
+            echo "Decompress shadowsocks-server-linux64-1.1.5.gz success."
         else
-            echo "Decompress shadowsocks-server-linux64-1.1.4.gz failed! Please check gzip command."
+            echo "Decompress shadowsocks-server-linux64-1.1.5.gz failed! Please check gzip command."
             exit 1
         fi
-        mv -f shadowsocks-server-linux64-1.1.4 /usr/bin/shadowsocks-server
+        mv -f shadowsocks-server-linux64-1.1.5 /usr/bin/shadowsocks-server
     else
-        if ! wget -c http://lamp.teddysun.com/shadowsocks/shadowsocks-server-linux32-1.1.4.gz;then
-            echo "Failed to download shadowsocks-server-linux32-1.1.4.gz"
+        if ! wget -c http://lamp.teddysun.com/shadowsocks/shadowsocks-server-linux32-1.1.5.gz;then
+            echo "Failed to download shadowsocks-server-linux32-1.1.5.gz"
             exit 1
         fi
-        gzip -d shadowsocks-server-linux32-1.1.4.gz
+        gzip -d shadowsocks-server-linux32-1.1.5.gz
         if [ $? -eq 0 ];then
-            echo "Decompress shadowsocks-server-linux32-1.1.4.gz success."
+            echo "Decompress shadowsocks-server-linux32-1.1.5.gz success."
         else
-            echo "Decompress shadowsocks-server-linux32-1.1.4.gz failed! Please check gzip command."
+            echo "Decompress shadowsocks-server-linux32-1.1.5.gz failed! Please check gzip command."
             exit 1
         fi
-        mv -f shadowsocks-server-linux32-1.1.4 /usr/bin/shadowsocks-server
+        mv -f shadowsocks-server-linux32-1.1.5 /usr/bin/shadowsocks-server
     fi
 
     # Download start script
@@ -205,22 +205,43 @@ function config_shadowsocks(){
 EOF
 }
 
-# iptables set
-function iptables_set(){
-    echo "iptables start setting..."
-    /sbin/service iptables status 1>/dev/null 2>&1
-    if [ $? -eq 0 ]; then
-        /etc/init.d/iptables status | grep '${shadowsocksport}' | grep 'ACCEPT' >/dev/null 2>&1
-        if [ $? -ne 0 ]; then
-            /sbin/iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport ${shadowsocksport} -j ACCEPT
-            /etc/init.d/iptables save
-            /etc/init.d/iptables restart
+# firewall set
+function firewall_set(){
+    echo "firewall set start..."
+    if centosversion 6; then
+        /etc/init.d/iptables status > /dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            iptables -L -n | grep '${shadowsocksport}' | grep 'ACCEPT' > /dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport ${shadowsocksport} -j ACCEPT
+                iptables -I INPUT -m state --state NEW -m udp -p udp --dport ${shadowsocksport} -j ACCEPT
+                /etc/init.d/iptables save
+                /etc/init.d/iptables restart
+            else
+                echo "port ${shadowsocksport} has been set up."
+            fi
         else
-            echo "port ${shadowsocksport} has been set up."
+            echo "WARNING: iptables looks like shutdown or not installed, please manually set it if necessary."
         fi
-    else
-        echo "iptables looks like shutdown, please manually set it if necessary."
+    elif centosversion 7; then
+        systemctl status firewalld > /dev/null 2>&1
+        if [ $? -eq 0 ];then
+            firewall-cmd --permanent --zone=public --add-port=${shadowsocksport}/tcp
+            firewall-cmd --permanent --zone=public --add-port=${shadowsocksport}/udp
+            firewall-cmd --reload
+        else
+            echo "Firewalld looks like not running, try to start..."
+            systemctl start firewalld
+            if [ $? -eq 0 ];then
+                firewall-cmd --permanent --zone=public --add-port=${shadowsocksport}/tcp
+                firewall-cmd --permanent --zone=public --add-port=${shadowsocksport}/udp
+                firewall-cmd --reload
+            else
+                echo "WARNING: Try to start firewalld failed. please enable port ${shadowsocksport} manually if necessary."
+            fi
+        fi
     fi
+    echo "firewall set completed..."
 }
 
 # Install 
@@ -236,7 +257,7 @@ function install_go(){
             chkconfig --add shadowsocks
             chkconfig shadowsocks on
         else
-            update-rc.d shadowsocks defaults
+            update-rc.d -f shadowsocks defaults
         fi
         # Start shadowsocks
         /etc/init.d/shadowsocks start
@@ -246,23 +267,23 @@ function install_go(){
             echo "Shadowsocks-go start failure!"
         fi
     else
-        echo ""
+        echo
         echo "shadowsocks-go install failed!"
         exit 1
     fi
     cd $cur_dir
     clear
-    echo ""
+    echo
     echo "Congratulations, shadowsocks-go install completed!"
     echo -e "Your Server IP: \033[41;37m ${IP} \033[0m"
     echo -e "Your Server Port: \033[41;37m ${shadowsocksport} \033[0m"
     echo -e "Your Password: \033[41;37m ${shadowsockspwd} \033[0m"
     echo -e "Your Local Port: \033[41;37m 1080 \033[0m"
     echo -e "Your Encryption Method: \033[41;37m aes-256-cfb \033[0m"
-    echo ""
-    echo "Welcome to visit:http://teddysun.com/392.html"
+    echo
+    echo "Welcome to visit:https://teddysun.com/392.html"
     echo "Enjoy it!"
-    echo ""
+    echo
     exit 0
 }
 
@@ -305,16 +326,14 @@ function install_shadowsocks_go(){
     download_files
     config_shadowsocks
     if [ "$OS" == 'CentOS' ]; then
-        if ! centosversion 7; then
-            iptables_set
-        fi
+        firewall_set
     fi
     install_go
 }
 
 # Initialization step
 action=$1
-[  -z $1 ] && action=install
+[ -z $1 ] && action=install
 case "$action" in
 install)
     install_shadowsocks_go
